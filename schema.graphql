@@ -1,0 +1,10 @@
+type RemarkEntity @entity {
+
+  id: ID! # tx hash
+
+  oriAddress: String! @index   # origin address
+
+  disAddress: String! # destinate address
+
+  createAt: Date!
+}

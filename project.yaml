@@ -1,0 +1,22 @@
+specVersion: 0.2.0
+name: demo
+version: 1.0.0
+description: 'parallel reward distribution of remark extrinsic subquery service'
+repository: ''
+schema:
+  file: ./schema.graphql
+network:
+  test: $TEST
+  # endpoint: wss://staging-polkadot-relay-rpc.parallel.fi  # test
+  # genesisHash: '0x5c087aaf16a18a226c6935b8f946988857b947681dba8b3059a8c04b9cbfda7c' #test
+  endpoint: wss://polkadot.api.onfinality.io/public-ws
+  genesisHash: '0x91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3'
+dataSources:
+  - kind: substrate/Runtime
+    # startBlock: 329000  # test
+    startBlock: 8532520
+    mapping:
+      file: ./dist/index.js
+      handlers:
+        - handler: handleRemarkExtrinsic
+          kind: substrate/CallHandler
