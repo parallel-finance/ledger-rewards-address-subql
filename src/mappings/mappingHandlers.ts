@@ -1,7 +1,8 @@
 import { SubstrateExtrinsic } from "@subql/types";
 import { Extrinsic } from "@polkadot/types/interfaces";
-import { RemarkEntity } from "../types";
 import { AnyTuple } from "@polkadot/types/types";
+import { RemarkEntity } from "../types";
+import { Option, Some, None, isNone } from "../lib";
 
 const SECTION_SYSTEM = "system";
 const METHOD_REMARK = "remark";
@@ -17,10 +18,19 @@ function isRemark(ext: Extrinsic): Boolean {
     return section === SECTION_SYSTEM && method === METHOD_REMARK
 }
 
-function parseRemarkBody(args: AnyTuple): RemarkData {
+function parseRemarkBody(args: AnyTuple): Option<RemarkData> {
     const data = Buffer.from(args.toString().slice(2), 'hex').toString('utf8')
     logger.debug("parse remark extrinsic data: %o", data)
-    return JSON.parse(data) as RemarkData
+    if (data.startsWith("{")) {
+        // NOTE: if remark policy change, need to modify this
+        try {
+            return Some(JSON.parse(data) as RemarkData)
+        } catch (e) {
+            logger.error("parse remark data error: %o", e)
+            return None
+        }
+    }
+    return None
 }
 
 export async function handleRemarkExtrinsic(ext: SubstrateExtrinsic): Promise<void> {
@@ -28,7 +38,11 @@ export async function handleRemarkExtrinsic(ext: SubstrateExtrinsic): Promise<vo
     if (!isRemark(ext.extrinsic) || !isSigned || args.length < 1) {
         return
     }
-    const data = parseRemarkBody(args)
+    const re = parseRemarkBody(args)
+    if (isNone(re)) {
+        return
+    }
+    const data = re.value
     const ex = ext.extrinsic
     const remarkEntity = RemarkEntity.create({
         id: ex.hash.toString(),
