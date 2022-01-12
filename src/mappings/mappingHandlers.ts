@@ -48,6 +48,7 @@ export async function handleRemarkExtrinsic(ext: SubstrateExtrinsic): Promise<vo
         id: ex.hash.toString(),
         oriAddress: ex.signer.toString(),
         disAddress: data.address,
+        blockHeight: ext.block.block.header.number.toNumber(),
         createAt: ext.block.timestamp
     })
     await remarkEntity.save()

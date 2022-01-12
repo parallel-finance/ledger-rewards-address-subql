@@ -6,5 +6,7 @@ type RemarkEntity @entity {
 
   disAddress: String! # destinate address
 
+  blockHeight: Int! @index
+
   createAt: Date!
 }
