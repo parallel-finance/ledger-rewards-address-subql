@@ -113,7 +113,7 @@ export namespace Result {
         return promise.then(Ok).catch(Err)
     }
 
-    export function tryCatch<T, E extends Error>(fn: () => T): Result<T, E> {
+    export function tryCatch<T>(fn: () => T): Result<T, unknown> {
         try {
             return Ok(fn())
         } catch (error) {

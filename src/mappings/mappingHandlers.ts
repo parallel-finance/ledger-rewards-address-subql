@@ -24,7 +24,10 @@ function parseRemarkBody(args: AnyTuple): Option<RemarkData> {
     if (data.startsWith("{")) {
         // NOTE: if remark policy change, need to modify this
         try {
-            return Some(JSON.parse(data) as RemarkData)
+            const jDat = JSON.parse(data) as RemarkData
+            const { target, address, terms } = jDat
+            if (!target || !address || !terms) return None
+            return Some(jDat)
         } catch (e) {
             logger.error("parse remark data error: %o", e)
             return None
@@ -47,7 +50,7 @@ export async function handleRemarkExtrinsic(ext: SubstrateExtrinsic): Promise<vo
     const remarkEntity = RemarkEntity.create({
         id: ex.hash.toString(),
         oriAddress: ex.signer.toString(),
-        disAddress: data.address,
+        dstAddress: data.address,
         blockHeight: ext.block.block.header.number.toNumber(),
         createAt: ext.block.timestamp
     })

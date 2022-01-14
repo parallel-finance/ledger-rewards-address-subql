@@ -43,7 +43,6 @@ export namespace Option {
         }
     }
 
-
     export function contains<T>(match: T): (option: Option<T>) => boolean {
         return (option) => isSome(option) && option.value === match
     }

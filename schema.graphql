@@ -4,7 +4,7 @@ type RemarkEntity @entity {
 
   oriAddress: String! @index   # origin address
 
-  disAddress: String! # destinate address
+  dstAddress: String! # destinate address
 
   blockHeight: Int! @index
 
