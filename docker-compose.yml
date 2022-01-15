@@ -3,12 +3,15 @@ version: '3'
 services:
   postgres:
     image: postgres:14
+    expose:
+      - ${PG_EXPOSE_PORT}
     ports:
-      - 5432:5432
+      - ${PG_EXPOSE_PORT}:${PG_RUN_PORT}
     volumes:
       - .data/postgres:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: postgres
+    command: -p ${PG_RUN_PORT}
 
   subquery-node:
     image: onfinality/subql-node:latest
@@ -20,7 +23,7 @@ services:
       DB_PASS: postgres
       DB_DATABASE: postgres
       DB_HOST: postgres
-      DB_PORT: 5432
+      DB_PORT: ${PG_RUN_PORT}
     volumes:
       - ./:/app
     command:
@@ -40,7 +43,7 @@ services:
       DB_PASS: postgres
       DB_DATABASE: postgres
       DB_HOST: postgres
-      DB_PORT: 5432
+      DB_PORT: ${PG_RUN_PORT}
     command:
       - --name=app
       - --playground
