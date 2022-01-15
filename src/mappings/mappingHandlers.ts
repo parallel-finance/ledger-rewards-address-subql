@@ -8,9 +8,9 @@ const SECTION_SYSTEM = "system";
 const METHOD_REMARK = "remark";
 
 interface RemarkData {
-    target: string,
-    address: string,
-    terms: string
+    action: string,
+    timestamp: string,
+    msg: string
 }
 
 function isRemark(ext: Extrinsic): Boolean {
@@ -18,16 +18,28 @@ function isRemark(ext: Extrinsic): Boolean {
     return section === SECTION_SYSTEM && method === METHOD_REMARK
 }
 
-function parseRemarkBody(args: AnyTuple): Option<RemarkData> {
+
+/**
+ * 
+ * @param args 
+ * @returns 
+ * {
+ *  "action":"Replace address",
+ *  "timestamp":"2021-01-14",
+ *  "msg":"I confirm I want to receive project rewards 
+ *  to: ADDRESS. I agree and acknowledge that Parallel Finance shall not be liable for any direct/ indirect losses of any kind."}
+ */
+function parseRemarkBody(args: AnyTuple): Option<string> {
     const data = Buffer.from(args.toString().slice(2), 'hex').toString('utf8')
-    logger.debug("parse remark extrinsic data: %o", data)
+    logger.info("get remark extrinsic origin data: %o", data)
     if (data.startsWith("{")) {
         // NOTE: if remark policy change, need to modify this
         try {
             const jDat = JSON.parse(data) as RemarkData
-            const { target, address, terms } = jDat
-            if (!target || !address || !terms) return None
-            return Some(jDat)
+            const { action, timestamp, msg } = jDat
+            if (!action || !timestamp || !msg) return None
+            logger.info("parsed remark json data: %o", jDat)
+            return Some(msg.split("to:")[1].split(".")[0])
         } catch (e) {
             logger.error("parse remark data error: %o", e)
             return None
@@ -45,12 +57,12 @@ export async function handleRemarkExtrinsic(ext: SubstrateExtrinsic): Promise<vo
     if (isNone(re)) {
         return
     }
-    const data = re.value
+    const dstAddress = re.value
     const ex = ext.extrinsic
     const remarkEntity = RemarkEntity.create({
         id: ex.hash.toString(),
         oriAddress: ex.signer.toString(),
-        dstAddress: data.address,
+        dstAddress,
         blockHeight: ext.block.block.header.number.toNumber(),
         createAt: ext.block.timestamp
     })
