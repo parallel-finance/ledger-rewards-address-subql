@@ -57,7 +57,7 @@ export async function handleRemarkExtrinsic(ext: SubstrateExtrinsic): Promise<vo
     if (isNone(re)) {
         return
     }
-    const dstAddress = re.value
+    const dstAddress = findLongestWord(re.value)
     const ex = ext.extrinsic
     const remarkEntity = RemarkEntity.create({
         id: ex.hash.toString(),
@@ -67,4 +67,16 @@ export async function handleRemarkExtrinsic(ext: SubstrateExtrinsic): Promise<vo
         createAt: ext.block.timestamp
     })
     await remarkEntity.save()
+}
+
+function findLongestWord(str: string): string {
+    const strSplit = str.split(' ');
+    const longestWord = strSplit.reduce(
+        function(longest, currentWord) {
+            return currentWord.length > longest.length ? currentWord : longest;
+        },
+        "",
+    );
+
+    return longestWord
 }
