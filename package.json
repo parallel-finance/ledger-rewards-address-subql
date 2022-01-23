@@ -23,5 +23,8 @@
     "@subql/cli": "latest",
     "@subql/types": "latest",
     "typescript": "^4.1.3"
+  },
+  "dependencies": {
+    "@polkadot/keyring": "^8.3.3"
   }
 }

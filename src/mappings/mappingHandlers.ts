@@ -3,6 +3,8 @@ import { Extrinsic } from "@polkadot/types/interfaces";
 import { AnyTuple } from "@polkadot/types/types";
 import { RemarkEntity } from "../types";
 import { Option, Some, None, isNone } from "../lib";
+import { decodeAddress, encodeAddress } from '@polkadot/keyring';
+import { hexToU8a, isHex } from '@polkadot/util';
 
 const SECTION_SYSTEM = "system";
 const METHOD_REMARK = "remark";
@@ -57,7 +59,7 @@ export async function handleRemarkExtrinsic(ext: SubstrateExtrinsic): Promise<vo
     if (isNone(re)) {
         return
     }
-    const dstAddress = findLongestWord(re.value)
+    const dstAddress = FilterValidAddress(re.value)
     const ex = ext.extrinsic
     const remarkEntity = RemarkEntity.create({
         id: ex.hash.toString(),
@@ -69,8 +71,22 @@ export async function handleRemarkExtrinsic(ext: SubstrateExtrinsic): Promise<vo
     await remarkEntity.save()
 }
 
-function findLongestWord(str: string): string {
-    const strSplit = str.split(' ');
+function FilterValidAddress(text: string): string {
+    const isValidAddress = (address: string) => {
+        try {
+            encodeAddress(
+              isHex(address)
+                ? hexToU8a(address)
+                : decodeAddress(address)
+            );
+        
+            return true;
+          } catch (error) {
+            return false;
+          }
+    }
+    
+    const strSplit = text.split(' ');
     const longestWord = strSplit.reduce(
         function(longest, currentWord) {
             return currentWord.length > longest.length ? currentWord : longest;
@@ -78,5 +94,5 @@ function findLongestWord(str: string): string {
         "",
     );
 
-    return longestWord
+    return isValidAddress(longestWord) ? longestWord : 'InValidAddress'
 }
