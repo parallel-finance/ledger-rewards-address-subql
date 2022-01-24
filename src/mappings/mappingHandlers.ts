@@ -8,6 +8,7 @@ import { hexToU8a, isHex } from '@polkadot/util';
 
 const SECTION_SYSTEM = "system";
 const METHOD_REMARK = "remark";
+const ERROR_ADDRESS = '';
 
 interface RemarkData {
     action: string,
@@ -59,19 +60,48 @@ export async function handleRemarkExtrinsic(ext: SubstrateExtrinsic): Promise<vo
     if (isNone(re)) {
         return
     }
-    const dstAddress = FilterValidAddress(re.value)
     const ex = ext.extrinsic
-    const remarkEntity = RemarkEntity.create({
-        id: ex.hash.toString(),
-        oriAddress: ex.signer.toString(),
-        dstAddress,
-        blockHeight: ext.block.block.header.number.toNumber(),
-        createAt: ext.block.timestamp
-    })
-    await remarkEntity.save()
+    const oriAddress = ex.signer.toString()
+    const dstAddress = filterValidAddress(oriAddress, re.value)
+    if (dstAddress === ERROR_ADDRESS) {
+        logger.warn(`Invalid address: ${re.value}`)
+        return
+    }
+
+    if ((await RemarkEntity.getByOriAddress(oriAddress)).length === 0) {
+        try{
+            const remarkEntity = RemarkEntity.create({
+                id: ex.hash.toString(),
+                oriAddress,
+                dstAddress,
+                blockHeight: ext.block.block.header.number.toNumber(),
+                createAt: ext.block.timestamp
+            })
+            await remarkEntity.save()
+        } catch (e) {
+            logger.error("create remark entity error: %o", e)
+        }
+    } else {
+        checkLatestDstAddress(oriAddress, dstAddress)
+    }
 }
 
-function FilterValidAddress(text: string): string {
+async function checkLatestDstAddress(oriAddress: string, dstAddress: string): Promise<void> {
+    let records = await RemarkEntity.getByOriAddress(oriAddress)
+    if (!records || records.length > 1) {
+        logger.error(`filter dirty data error: too many records ${records.length}`)
+    }
+
+    try{
+        let record = records[0]
+        record.dstAddress = dstAddress
+        await record.save()
+    } catch (e) {
+        logger.error("update remark entiry address error: %o", e)
+    }
+}
+
+function filterValidAddress(oriAddress: string, dstAddress: string): string {
     const isValidAddress = (address: string) => {
         try {
             encodeAddress(
@@ -79,20 +109,19 @@ function FilterValidAddress(text: string): string {
                 ? hexToU8a(address)
                 : decodeAddress(address)
             );
-        
+
             return true;
           } catch (error) {
             return false;
           }
     }
-    
-    const strSplit = text.split(' ');
-    const longestWord = strSplit.reduce(
-        function(longest, currentWord) {
-            return currentWord.length > longest.length ? currentWord : longest;
-        },
-        "",
-    );
 
-    return isValidAddress(longestWord) ? longestWord : 'InValidAddress'
+    const longestWord = dstAddress.split(' ')
+        .reduce(
+            function(longest, currentWord) {
+                return currentWord.length > longest.length ? currentWord : longest;
+            },
+            "",
+        );
+    return (isValidAddress(longestWord) && (longestWord !== oriAddress)) ? longestWord : ERROR_ADDRESS
 }
